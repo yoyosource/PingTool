@@ -191,7 +191,7 @@ public class Ping implements Runnable {
         } else {
             graph = graph(d, s, averageSmall1.average(), averageLarge1.average(), error, '*');
         }
-        String outputToFile = StringUtils.leading(++connects + "", 19) + "   " + StringUtils.leading(s, 10) + " " + (s.equals("ERROR") ? "  " : "ms") + "   " + StringUtils.leading(time + "", 19) + "   " + DateTimeFormatter.ofPattern("HH:mm:ss").format(temporalAccessor) + "   " + graph;
+        String outputToFile = StringUtils.leading(++connects + "", 19) + "   " + StringUtils.leading(s, 10) + " " + (s.equals("ERROR") || s.equals("------") ? "  " : "ms") + "   " + StringUtils.leading(time + "", 19) + "   " + DateTimeFormatter.ofPattern("HH:mm:ss").format(temporalAccessor) + "   " + graph;
         while (outputToFile.endsWith(" ")) {
             outputToFile = outputToFile.substring(0, outputToFile.length() - 1);
         }
