@@ -43,7 +43,9 @@ public class Ping implements Runnable {
 
     public Ping(String ip, String fileName, String interval, boolean graph_Ping, boolean graph_averagePings, boolean graph_AveragePings, boolean graph_Error) {
         String message = StringUtils.leading("Tries", 19) + "   " + StringUtils.leading("Latency", 13) + "   " + StringUtils.leading("Timestamp", 30) + "   Graph";
-        System.out.println(message);
+        if (!Thread.currentThread().isDaemon()) {
+            System.out.println(message);
+        }
         assembleCommand(ip);
 
         this.graph_Ping = graph_Ping;
@@ -200,7 +202,9 @@ public class Ping implements Runnable {
             bufferedWriter.write(outputToFile);
             bufferedWriter.flush();
         }
-        System.out.println(outputToFile);
+        if (!Thread.currentThread().isDaemon()) {
+            System.out.println(outputToFile);
+        }
 
         //|                 56       25.044 ms         1578228526246   13:48:46   |
         // 71 chars prefix

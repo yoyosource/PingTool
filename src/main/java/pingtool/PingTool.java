@@ -4,9 +4,9 @@ import pingtool.utils.ArgumentMapper;
 import pingtool.utils.ArgumentMapping;
 import pingtool.utils.StringUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 
 public class PingTool {
 
@@ -17,6 +17,7 @@ public class PingTool {
 
             new ArgumentMapping("-help", true, "-h"),
 
+            new ArgumentMapping("-background", true, "-b"),
             new ArgumentMapping("-default", true, "-d"),
             new ArgumentMapping("-ping", true, "-p"),
             new ArgumentMapping("-averagePings", true, "-a"),
@@ -104,6 +105,9 @@ public class PingTool {
         Ping ping = new Ping(ip, file, interval, graph_Ping, graph_averagePings, graph_AveragePings, graph_Error);
         Thread pingThread = new Thread(ping);
         pingThread.setName("PingThread");
+        if (argumentMapper.hasArgument("-background")) {
+            pingThread.setDaemon(true);
+        }
         pingThread.start();
     }
 
@@ -117,6 +121,8 @@ public class PingTool {
         System.out.println(StringUtils.padding("-i[nterval] <TIME>", padding) + "to specify the interval time in milliseconds to ping the specified IP address");
         System.out.println();
         System.out.println("FLAGS");
+        System.out.println(StringUtils.padding("-b[ackground]", padding) + "to run this process as a daemon without console output");
+        System.out.println();
         System.out.println(StringUtils.padding("-p[ing]", padding) + "to show the ping graph.");
         System.out.println(StringUtils.padding("-a[veragePings]", padding) + "to show the average over the last 20 pings.");
         System.out.println(StringUtils.padding("-A[veragePings]", padding) + "to show the average over the last 1000 pings.");
