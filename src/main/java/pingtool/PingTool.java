@@ -4,10 +4,6 @@ import pingtool.utils.ArgumentMapper;
 import pingtool.utils.ArgumentMapping;
 import pingtool.utils.StringUtils;
 
-import java.io.*;
-import java.util.Arrays;
-import java.util.ConcurrentModificationException;
-
 public class PingTool {
 
     private static ArgumentMapping[] argumentMappings = new ArgumentMapping[]{

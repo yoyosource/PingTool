@@ -6,9 +6,7 @@ file_extensions:
 scope: source.pings
 contexts:
   main:
-    - match: ' +Tries +Time +Timestamp +Time +Graph / Error'
-      scope: comment.line.pings
-    - match: ' +Tries +Time +Timestamp +Time +Graph'
+    - match: ' +Tries +Latency +Timestamp +Graph'
       scope: comment.line.pings
 
     - match: '^ +[0-9]+ +\-+ (ms)? +[0-9]+'
