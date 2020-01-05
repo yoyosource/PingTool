@@ -44,7 +44,7 @@ This can be achieved by specifying different flags at the same time as starting 
 ## Log File
 
 The visualisation of the log file is the same as the console output.
-We suggest to open the log file produced by a capture with Sublime Text 3 and download the .sublime-syntax file to colorize the content.
+I suggest to open the log file produced by a capture with Sublime Text 3 and download the .sublime-syntax file to colorize the content.
 <p align="center">
   <img src="/docs/LogExample.png?raw=true" alt="Log file example" height="400"/>
 </p>
