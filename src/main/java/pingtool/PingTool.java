@@ -11,6 +11,9 @@ public class PingTool {
             new ArgumentMapping("-file", "-f"),
             new ArgumentMapping("-interval", "-i"),
 
+            new ArgumentMapping("-latency", "-l"),
+            new ArgumentMapping("-time", "-t"),
+
             new ArgumentMapping("-help", true, "-h"),
 
             new ArgumentMapping("-background", true, "-b"),
@@ -56,16 +59,42 @@ public class PingTool {
         if (argumentMapper.hasArgument("-file")) {
             file = argumentMapper.getArgument("-file").getValue();
         }
+        if (argumentMapper.hasArgument("-background") && !argumentMapper.hasArgument("-file")) {
+            System.out.println("Please specify a File when using '-background' or '-b' with '-f <FILE>'");
+            return;
+        }
 
-        String interval = "100";
+        int interval = 100;
         if (argumentMapper.hasArgument("-interval")) {
-            interval = argumentMapper.getArgument("-interval").getValue();
-            if (!interval.matches("\\d+")) {
+            String value = argumentMapper.getArgument("-interval").getValue();
+            if (!value.matches("\\d+")) {
                 System.out.println("Invalid interval");
                 System.out.println("Format: n");
                 System.out.println("Regex: \"\\\\d+\"");
                 return;
             }
+            interval = Integer.parseInt(value);
+        }
+        double latency = 0;
+        if (argumentMapper.hasArgument("-latency")) {
+            String value = argumentMapper.getArgument("-latency").getValue();
+            if (!value.matches("\\d+")) {
+                System.out.println("Invalid latency");
+                System.out.println("Format: n");
+                System.out.println("Regex: \"\\\\d+\"");
+                return;
+            }
+            latency = Double.parseDouble(value);
+        }
+        long stopAfter = 0;
+        if (argumentMapper.hasArgument("-time")) {
+            String value = argumentMapper.getArgument("-time").getValue();
+            if (!value.matches("\\d+")) {
+                System.out.println("Invalid time");
+                System.out.println("Format: n");
+                System.out.println("Regex: \"\\\\d+\"");
+            }
+            stopAfter = Long.parseLong(value) * 60 * 1000;
         }
 
         boolean graph_Ping = true;
@@ -77,7 +106,6 @@ public class PingTool {
             graph_Ping = false;
             graph_averagePings = false;
             graph_AveragePings = false;
-            graph_Error = false;
         }
 
         if (argumentMapper.hasArgument("-default")) {
@@ -98,7 +126,7 @@ public class PingTool {
             graph_Error = true;
         }
 
-        Ping ping = new Ping(ip, file, interval, graph_Ping, graph_averagePings, graph_AveragePings, graph_Error);
+        Ping ping = new Ping(ip, file, interval, argumentMapper.hasArgument("-background"), graph_Ping, graph_averagePings, graph_AveragePings, graph_Error, latency, stopAfter);
         Thread pingThread = new Thread(ping);
         pingThread.setName("PingThread");
         if (argumentMapper.hasArgument("-background")) {
@@ -116,8 +144,11 @@ public class PingTool {
         System.out.println(StringUtils.padding("", padding) + "<FILE> will automatically be in your user.home directory and will get the file suffix .pings");
         System.out.println(StringUtils.padding("-i[nterval] <TIME>", padding) + "to specify the interval time in milliseconds to ping the specified IP address");
         System.out.println();
+        System.out.println(StringUtils.padding("-l[atency] <TIME>", padding) + "to specify the latency threshold for logging messages in ms. Errors will still be logged.");
+        System.out.println(StringUtils.padding("-t[ime] <MINUTES>", padding) + "to specify the minutes after which the program automatically shuts down. Specify '0' for infinite");
+        System.out.println();
         System.out.println("FLAGS");
-        System.out.println(StringUtils.padding("-b[ackground]", padding) + "to run this process as a daemon without console output");
+        System.out.println(StringUtils.padding("-b[ackground]", padding) + "to run this process as a daemon without console output and the argument '-f <FILE>' is needed.");
         System.out.println();
         System.out.println(StringUtils.padding("-p[ing]", padding) + "to show the ping graph.");
         System.out.println(StringUtils.padding("-a[veragePings]", padding) + "to show the average over the last 20 pings.");

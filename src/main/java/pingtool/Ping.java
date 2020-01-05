@@ -24,6 +24,9 @@ public class Ping implements Runnable {
     private boolean graph_Error;
 
     private int interval = 100;
+    private double latency = 0;
+    private long stopAfter = 0;
+    private long start = System.currentTimeMillis();
 
     private File file;
     private BufferedWriter bufferedWriter;
@@ -41,9 +44,9 @@ public class Ping implements Runnable {
     private boolean working = true;
     private boolean pause = false;
 
-    public Ping(String ip, String fileName, String interval, boolean graph_Ping, boolean graph_averagePings, boolean graph_AveragePings, boolean graph_Error) {
+    public Ping(String ip, String fileName, int interval, boolean daemon, boolean graph_Ping, boolean graph_averagePings, boolean graph_AveragePings, boolean graph_Error, double latency, long stopAfter) {
         String message = StringUtils.leading("Tries", 19) + "   " + StringUtils.leading("Latency", 13) + "   " + StringUtils.leading("Timestamp", 30) + "   Graph";
-        if (!Thread.currentThread().isDaemon()) {
+        if (!daemon) {
             System.out.println(message);
         }
         assembleCommand(ip);
@@ -53,7 +56,9 @@ public class Ping implements Runnable {
         this.graph_AveragePings = graph_AveragePings;
         this.graph_Error = graph_Error;
 
-        this.interval = Integer.parseInt(interval);
+        this.latency = latency;
+        this.interval = interval;
+        this.stopAfter = stopAfter;
         if (fileName.isEmpty()) {
             return;
         }
@@ -105,6 +110,9 @@ public class Ping implements Runnable {
     @Override
     public void run() {
         while (working) {
+            if (System.currentTimeMillis() > stopAfter + start && stopAfter != 0) {
+                stop();
+            }
             if (!pause) {
                 long time = System.currentTimeMillis();
                 TemporalAccessor temporalAccessor = LocalDateTime.now();
@@ -148,6 +156,8 @@ public class Ping implements Runnable {
         int d = 0;
         boolean range = false;
 
+        connects++;
+
         if (s.isEmpty() || s.contains("Destination Net Unreachable")) {
             s = "------";
             errors++;
@@ -173,6 +183,9 @@ public class Ping implements Runnable {
                 } else {
                     d = (int) (t);
                 }
+                if (d < latency) {
+                    return;
+                }
                 averageSmall1.add(t);
                 averageLarge1.add(t);
                 averageSmall2.add(t * factor);
@@ -193,7 +206,7 @@ public class Ping implements Runnable {
         } else {
             graph = graph(d, s, averageSmall1.average(), averageLarge1.average(), error, '*');
         }
-        String outputToFile = StringUtils.leading(++connects + "", 19) + "   " + StringUtils.leading(s, 10) + " " + (s.equals("ERROR") || s.equals("------") ? "  " : "ms") + "   " + StringUtils.leading(time + "", 19) + "   " + DateTimeFormatter.ofPattern("HH:mm:ss").format(temporalAccessor) + "   " + graph;
+        String outputToFile = StringUtils.leading(connects + "", 19) + "   " + StringUtils.leading(s, 10) + " " + (s.equals("ERROR") || s.equals("------") ? "  " : "ms") + "   " + StringUtils.leading(time + "", 19) + "   " + DateTimeFormatter.ofPattern("HH:mm:ss").format(temporalAccessor) + "   " + graph;
         while (outputToFile.endsWith(" ")) {
             outputToFile = outputToFile.substring(0, outputToFile.length() - 1);
         }
