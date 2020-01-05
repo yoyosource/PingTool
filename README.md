@@ -51,10 +51,6 @@ We suggest to open the log file produced by a capture with Sublime Text 3 and do
 
 ## How it works
 
-The program uses the unix build in ping command to get the latency.
-If this might not work for you please contact be according to **Issues/Suggestions**
+The program uses the unix ping command to get the latency.
+If this might not work for you please contact me via an Issue or via a Pull request.
 The exact unix command is: 'ping -c 1 -W 1000 \<IP\>'
-
-## Issues/Suggestions
-
-I will add this later.
