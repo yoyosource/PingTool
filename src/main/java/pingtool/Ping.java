@@ -42,7 +42,7 @@ public class Ping implements Runnable {
     private boolean pause = false;
 
     public Ping(String ip, String fileName, String interval, boolean graph_Ping, boolean graph_averagePings, boolean graph_AveragePings, boolean graph_Error) {
-        String message = StringUtils.leading("Tries", 19) + "   " + StringUtils.leading("Time", 13) + "   " + StringUtils.leading("Timestamp", 30) + "   Time Graph";
+        String message = StringUtils.leading("Tries", 19) + "   " + StringUtils.leading("Latency", 13) + "   " + StringUtils.leading("Timestamp", 30) + "   Graph";
         System.out.println(message);
         assembleCommand(ip);
 
