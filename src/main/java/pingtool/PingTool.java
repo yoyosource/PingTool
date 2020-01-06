@@ -14,7 +14,8 @@ public class PingTool {
             new ArgumentMapping("-latency", "-l"),
             new ArgumentMapping("-time", "-t"),
 
-            new ArgumentMapping("-help", true, "-h"),
+            new ArgumentMapping("-help", true, "-h", "-?"),
+            new ArgumentMapping("-man", true, "-m"),
 
             new ArgumentMapping("-background", true, "-b"),
             new ArgumentMapping("-default", true, "-d"),
@@ -23,7 +24,11 @@ public class PingTool {
             new ArgumentMapping("-AveragePings", true, "-A"),
             new ArgumentMapping("-error", true, "-e"),
             new ArgumentMapping("-Error", true, "-E")};
+
     private static int padding = 24;
+    private static int indention = 5;
+    private static String commandName = "pingtool";
+    private static int compactPadding = 7;
 
     public static void main(String[] args) {
         ArgumentMapper argumentMapper = new ArgumentMapper(argumentMappings);
@@ -37,6 +42,10 @@ public class PingTool {
         }
 
         if (!argumentMapper.hasArgument() || argumentMapper.hasArgument("-help")) {
+            showCompactHelp();
+            return;
+        }
+        if (argumentMapper.hasArgument("-man")) {
             System.out.println("Help Ping Tool");
             showHelp();
             return;
@@ -61,6 +70,10 @@ public class PingTool {
         }
         if (argumentMapper.hasArgument("-background") && !argumentMapper.hasArgument("-file")) {
             System.out.println("Please specify a File when using '-background' or '-b' with '-f <FILE>'");
+            return;
+        }
+        if (argumentMapper.hasArgument("-background") && !argumentMapper.hasArgument("-time")) {
+            System.out.println("Please specify a Time when using '-background' or '-b' with '-t <TIME>'");
             return;
         }
 
@@ -135,7 +148,58 @@ public class PingTool {
         pingThread.start();
     }
 
+    public static void showCompactHelp() {
+        System.out.println(StringUtils.padding("usage: " + commandName, compactPadding + commandName.length()) + "[-AabdEehmp] [-I ip] [-f file]");
+        System.out.println(StringUtils.padding("", compactPadding + commandName.length()) + "[-i interval] [-l latency] [-t time]");
+    }
+
     public static void showHelp() {
+        System.out.println("NAME");
+        System.out.println(" ".repeat(indention) + commandName + " -- send ICMP ECHO_REQUEST packets to network hosts and visualises them");
+        System.out.println();
+        System.out.println("SYNOPSIS");
+        System.out.println(" ".repeat(indention) + commandName + " [-AabdEehmp] [-I ip] [-f file]");
+        System.out.println(" ".repeat(compactPadding + commandName.length() - 1) + "[-i interval] [-l latency] [-t time]");
+        System.out.println();
+        System.out.println("DESCRIPTION");
+        System.out.println(" ".repeat(indention) + "This tool displays ping results graphically. The options are as follows:");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-A[veragePings]");
+        System.out.println(" ".repeat(indention + 6) + "shows the average value over the last 1000 pings as `:'");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-a[veragePings]");
+        System.out.println(" ".repeat(indention + 6) + "shows the average value over the last 20 pings as `|'");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-b[ackground]");
+        System.out.println(" ".repeat(indention + 6) + "run this process as a daemon without console output and the argument `-f <FILE>' and `-t <TIME>' are needed.");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-d[efault]");
+        System.out.println(" ".repeat(indention + 6) + "the same as `-p -a -A'");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-E[rror]");
+        System.out.println(" ".repeat(indention + 6) + "the same as `-p -a -A -e'. Removes `-d' if this flag is used as it is redundant");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-e[rror]");
+        System.out.println(" ".repeat(indention + 6) + "shows error graph in output");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-f[ile] filename");
+        System.out.println(" ".repeat(indention + 6) + "prints output into specified file in addition to stdout, creates it if necessary. File will start at `user.home' and gets the suffix `.pings'");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-h[elp]");
+        System.out.println(" ".repeat(indention + 6) + "prints this message");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-I[P] ipv4");
+        System.out.println(" ".repeat(indention) + "-ip ipv4");
+        System.out.println(" ".repeat(indention + 6) + "specifies destination to ping");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-i[nterval] time");
+        System.out.println(" ".repeat(indention + 6) + "specifies the interval time to ping the address in milliseconds. If not specified the default value is `100'");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-l[atency] time");
+        System.out.println(" ".repeat(indention + 6) + "prints only the pings that are above or equal to the specified latency in milliseconds. If not specified every ping will be printed");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "");
+
         System.out.println("SETTINGS");
         System.out.println(StringUtils.padding("-h[elp]", padding) + "to see this message.");
         System.out.println(StringUtils.padding("-ip <IP>", padding) + "to start the graph with specified IP address.");
