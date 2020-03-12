@@ -1,4 +1,4 @@
-package pingtool;
+package pingtool.capture;
 
 import pingtool.utils.Average;
 import pingtool.utils.StringUtils;

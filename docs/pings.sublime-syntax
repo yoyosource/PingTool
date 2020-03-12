@@ -30,6 +30,9 @@ contexts:
     - match: '[×]'
       scope: keyword.control.pings
 
+    - match: "^( *)#.+?$"
+      scope: comment.pings
+
 # entity.other.attribute-name.pings
 # string.quoted.double.pings
 # keyword.control.pings

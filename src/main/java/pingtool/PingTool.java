@@ -1,13 +1,28 @@
 package pingtool;
 
+import pingtool.capture.Ping;
 import pingtool.utils.ArgumentMapper;
 import pingtool.utils.ArgumentMapping;
+import pingtool.utils.ExternalIP;
 import pingtool.utils.StringUtils;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PingTool {
 
     private static ArgumentMapping[] argumentMappings = new ArgumentMapping[]{
             new ArgumentMapping("-ip", "-IP", "-I"),
+            new ArgumentMapping("-external", true, "-eip", "-X"),
+            new ArgumentMapping("-local", true, "lip", "-x"),
             new ArgumentMapping("-file", "-f"),
             new ArgumentMapping("-interval", "-i"),
 
@@ -23,9 +38,11 @@ public class PingTool {
             new ArgumentMapping("-averagePings", true, "-a"),
             new ArgumentMapping("-AveragePings", true, "-A"),
             new ArgumentMapping("-error", true, "-e"),
-            new ArgumentMapping("-Error", true, "-E")};
+            new ArgumentMapping("-Error", true, "-E"),
 
-    private static int padding = 24;
+            new ArgumentMapping("-interfaces", true, "-ifs"),
+    };
+
     private static int indention = 5;
     private static String commandName = "pingtool";
     private static int compactPadding = 7;
@@ -41,8 +58,13 @@ public class PingTool {
             return;
         }
 
-        if (!argumentMapper.hasArgument() || argumentMapper.hasArgument("-help")) {
+        if (!argumentMapper.hasArgument() || argumentMapper.hasArgument("-?")) {
             showCompactHelp();
+            return;
+        }
+        if (!argumentMapper.hasArgument() || argumentMapper.hasArgument("-help")) {
+            System.out.println("Help Ping Tool");
+            showHelp();
             return;
         }
         if (argumentMapper.hasArgument("-man")) {
@@ -51,12 +73,29 @@ public class PingTool {
             return;
         }
 
-        if (!argumentMapper.hasArgument("-ip")) {
+        if (!argumentMapper.hasArgument() || argumentMapper.hasArgument("-interfaces")) {
+            showInterfaces();
+            return;
+        }
+
+        if (!(argumentMapper.hasArgument("-ip") || argumentMapper.hasArgument("-external") || argumentMapper.hasArgument("-local"))) {
             System.out.println("Please specify an IP address with '-ip <IP>'");
             showHelp();
             return;
         }
-        String ip = argumentMapper.getArgument("-ip").getValue();
+        String ip = "";
+        if (argumentMapper.hasArgument("-ip")) {
+            ip = argumentMapper.getArgument("-ip").getValue();
+            if (ip.equals("localhost")) {
+                ip = "127.0.0.1";
+            } else if (ip.equals("external")) {
+                ip = ExternalIP.get();
+            }
+        } else if (argumentMapper.hasArgument("-external")) {
+            ip = ExternalIP.get();
+        } else if (argumentMapper.hasArgument("-local")) {
+            ip = "127.0.0.1";
+        }
         if (!ip.matches("[0-9]{1,3}(\\.[0-9]{1,3}){3}")) {
             System.out.println("Invalid IP address");
             System.out.println("Format: n[nn].n[nn].n[nn].n[nn]");
@@ -149,8 +188,8 @@ public class PingTool {
     }
 
     public static void showCompactHelp() {
-        System.out.println(StringUtils.padding("usage: " + commandName, compactPadding + commandName.length()) + "[-AabdEehmp] [-I ip] [-f file]");
-        System.out.println(StringUtils.padding("", compactPadding + commandName.length()) + "[-i interval] [-l latency] [-t time]");
+        System.out.println(StringUtils.padding("usage: " + commandName, compactPadding + commandName.length()) + " [-AabdEehmpXx] [-I ip] [-f file]");
+        System.out.println(StringUtils.padding("", compactPadding + commandName.length()) + " [-i interval] [-l latency] [-t time]");
     }
 
     public static void showHelp() {
@@ -158,7 +197,7 @@ public class PingTool {
         System.out.println(" ".repeat(indention) + commandName + " -- send ICMP ECHO_REQUEST packets to network hosts and visualises them");
         System.out.println();
         System.out.println("SYNOPSIS");
-        System.out.println(" ".repeat(indention) + commandName + " [-AabdEehmp] [-I ip] [-f file]");
+        System.out.println(" ".repeat(indention) + commandName + " [-AabdEehmpXx] [-I ip] [-f file]");
         System.out.println(" ".repeat(compactPadding + commandName.length() - 1) + "[-i interval] [-l latency] [-t time]");
         System.out.println();
         System.out.println("DESCRIPTION");
@@ -190,7 +229,13 @@ public class PingTool {
         System.out.println();
         System.out.println(" ".repeat(indention) + "-I[P] ipv4");
         System.out.println(" ".repeat(indention) + "-ip ipv4");
-        System.out.println(" ".repeat(indention + 6) + "specifies destination to ping");
+        System.out.println(" ".repeat(indention + 6) + "specifies destination to ping. `localhost' gets converted to `127.0.0.1'. `external' gets converted to your external ip address.");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-interface");
+        System.out.println(" ".repeat(indention + 6) + " ");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-interfaces");
+        System.out.println(" ".repeat(indention + 6) + " ");
         System.out.println();
         System.out.println(" ".repeat(indention) + "-i[nterval] time");
         System.out.println(" ".repeat(indention + 6) + "specifies the interval time to ping the address in milliseconds. If not specified the default value is `100'");
@@ -198,32 +243,46 @@ public class PingTool {
         System.out.println(" ".repeat(indention) + "-l[atency] time");
         System.out.println(" ".repeat(indention + 6) + "prints only the pings that are above or equal to the specified latency in milliseconds. If not specified every ping will be printed");
         System.out.println();
-        System.out.println(" ".repeat(indention) + "");
+        System.out.println(" ".repeat(indention) + "-m[an]");
+        System.out.println(" ".repeat(indention + 6) + "prints this message");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-p[ing]");
+        System.out.println(" ".repeat(indention + 6) + "shows ping graph in output");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-external");
+        System.out.println(" ".repeat(indention) + "-eip");
+        System.out.println(" ".repeat(indention) + "-X");
+        System.out.println(" ".repeat(indention + 6) + "the same as `-ip external'");
+        System.out.println();
+        System.out.println(" ".repeat(indention) + "-local");
+        System.out.println(" ".repeat(indention) + "-lip");
+        System.out.println(" ".repeat(indention) + "-x");
+        System.out.println(" ".repeat(indention + 6) + "the same as `-ip localhost'");
+    }
 
-        System.out.println("SETTINGS");
-        System.out.println(StringUtils.padding("-h[elp]", padding) + "to see this message.");
-        System.out.println(StringUtils.padding("-ip <IP>", padding) + "to start the graph with specified IP address.");
-        System.out.println(StringUtils.padding("-I[P] <IP>", padding) + "refers to '-ip <IP>'.");
-        System.out.println(StringUtils.padding("-f[ile] <FILE>", padding) + "to start the graph with specified IP address and Output Dump File.");
-        System.out.println(StringUtils.padding("", padding) + "<FILE> will automatically be in your user.home directory and will get the file suffix .pings");
-        System.out.println(StringUtils.padding("-i[nterval] <TIME>", padding) + "to specify the interval time in milliseconds to ping the specified IP address");
+    private static void showInterfaces() {
+        System.out.println("Interfaces");
+        try {
+            Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+            for (NetworkInterface netint : Collections.list(nets)) {
+                System.out.printf("Display name: %s\n", netint.getDisplayName());
+                System.out.printf("Name: %s\n", netint.getName());
+                System.out.printf("Interface Options:\n");
+                System.out.printf("- Loopback: %s\n", netint.isLoopback());
+                System.out.printf("- P2P: %s\n", netint.isPointToPoint());
+                System.out.printf("- Virtual: %s\n", netint.isVirtual());
+                Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
+                for (InetAddress inetAddress : Collections.list(inetAddresses)) {
+                    System.out.printf("InetAddress: %s\n", inetAddress);
+                }
+                System.out.printf("\n");
+            }
+        } catch (IOException e) {
+
+        }
         System.out.println();
-        System.out.println(StringUtils.padding("-l[atency] <TIME>", padding) + "to specify the latency threshold for logging messages in ms. Errors will still be logged.");
-        System.out.println(StringUtils.padding("-t[ime] <MINUTES>", padding) + "to specify the minutes after which the program automatically shuts down. Specify '0' for infinite");
-        System.out.println();
-        System.out.println("FLAGS");
-        System.out.println(StringUtils.padding("-b[ackground]", padding) + "to run this process as a daemon without console output and the argument '-f <FILE>' is needed.");
-        System.out.println();
-        System.out.println(StringUtils.padding("-p[ing]", padding) + "to show the ping graph.");
-        System.out.println(StringUtils.padding("-a[veragePings]", padding) + "to show the average over the last 20 pings.");
-        System.out.println(StringUtils.padding("-A[veragePings]", padding) + "to show the average over the last 1000 pings.");
-        System.out.println(StringUtils.padding("-d[efault]", padding) + StringUtils.padding("refers to:", 13) + StringUtils.padding("-p -a -A", 15) + "remove '-d' if '-e' is not specified.");
-        System.out.println(StringUtils.padding("", padding + 13 + 15) + "remove '-d' if '-E' is specified as '-E' refers to '-d -e'.");
-        System.out.println(StringUtils.padding("", padding + 13 + 15) + "remove '-d' if '-p', '-a' or '-A' is specified as '-d' overwrites those flags.");
-        System.out.println(StringUtils.padding("-e[rror]", padding) + "to show the error graph");
-        System.out.println(StringUtils.padding("-E[rror]", padding) + StringUtils.padding("refers to:", 13) + StringUtils.padding("-p -a -A -e", 15) + "short form for '-d -e'.");
-        System.out.println();
-        System.out.println(StringUtils.padding("", padding) + "FLAGS will specify the different graphs shown. If any flag is specified it overrides the -d flag with your specifications.");
+        System.out.println("External IP");
+        System.out.println(ExternalIP.get());
     }
 
 }
